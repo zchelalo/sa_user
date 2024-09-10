@@ -90,24 +90,27 @@ func (userRouter *UserRouter) GetUser(ctx context.Context, req *userProto.GetUse
 	return responseProto, nil
 }
 
-func (userRouter *UserRouter) GetUserPasswordHash(ctx context.Context, req *userProto.GetUserPasswordHashRequest) (*userProto.GetUserPasswordHashResponse, error) {
-	userObtained, err := userRouter.useCase.GetPasswordHashAndID(req.GetEmail())
+func (userRouter *UserRouter) GetUserToAuth(ctx context.Context, req *userProto.GetUserToAuthRequest) (*userProto.GetUserToAuthResponse, error) {
+	userObtained, err := userRouter.useCase.GetToAuth(req.GetEmail())
 	if err != nil {
-		responseProto := formatError[userProto.GetUserPasswordHashResponse_Error, userProto.GetUserPasswordHashResponse](err)
+		responseProto := formatError[userProto.GetUserToAuthResponse_Error, userProto.GetUserToAuthResponse](err)
 
 		return responseProto, nil
 	}
 
-	protoData := &userProto.PasswordHashAndId{
-		Id:   userObtained.ID,
-		Hash: userObtained.Password,
+	protoUser := &userProto.UserWithPassword{
+		Id:       userObtained.ID,
+		Name:     userObtained.Name,
+		Email:    userObtained.Email,
+		Password: userObtained.Password,
+		Verified: userObtained.Verified,
 	}
 
-	responseDataProto := &userProto.GetUserPasswordHashResponse_Data{
-		Data: protoData,
+	responseDataProto := &userProto.GetUserToAuthResponse_User{
+		User: protoUser,
 	}
 
-	responseProto := &userProto.GetUserPasswordHashResponse{
+	responseProto := &userProto.GetUserToAuthResponse{
 		Result: responseDataProto,
 	}
 

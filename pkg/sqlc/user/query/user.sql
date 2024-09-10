@@ -7,23 +7,41 @@ INSERT INTO users (
   verified
 )
 VALUES ($1, $2, $3, $4, $5)
-RETURNING *;
+RETURNING
+  id,
+  name,
+  email,
+  verified
+;
 
 -- name: GetUser :one
-SELECT * FROM users
+SELECT
+  id,
+  name,
+  email,
+  verified
+FROM users
 WHERE id = $1
 LIMIT 1;
 
--- name: GetUserPasswordHashAndID :one
+-- name: GetUserToAuth :one
 SELECT
   id,
-  password
+  name,
+  email,
+  password,
+  verified
 FROM users
 WHERE email = $1
 LIMIT 1;
 
 -- name: ListUsers :many
-SELECT * FROM users
+SELECT
+  id,
+  name,
+  email,
+  verified
+FROM users
 WHERE verified = true
 ORDER BY created_at DESC
 OFFSET $1
@@ -37,7 +55,12 @@ SET
   password = $4,
   verified = $5
 WHERE id = $1
-RETURNING *;
+RETURNING
+  id,
+  name,
+  email,
+  verified
+;
 
 -- name: DeleteUser :exec
 DELETE FROM users

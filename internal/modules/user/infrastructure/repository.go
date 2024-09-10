@@ -29,20 +29,22 @@ func (repo *UserRepository) Get(id string) (*userDomain.UserEntity, error) {
 		ID:       userObtained.ID,
 		Name:     userObtained.Name,
 		Email:    userObtained.Email,
-		Password: userObtained.Password,
 		Verified: userObtained.Verified,
 	}, nil
 }
 
-func (repo *UserRepository) GetPasswordHashAndID(email string) (*userDomain.HashedPasswordAndID, error) {
-	passwordAndID, err := repo.store.GetUserPasswordHashAndID(repo.ctx, email)
+func (repo *UserRepository) GetToAuth(email string) (*userDomain.UserEntity, error) {
+	userObtained, err := repo.store.GetUserToAuth(repo.ctx, email)
 	if err != nil {
 		return nil, err
 	}
 
-	result := &userDomain.HashedPasswordAndID{
-		ID:       passwordAndID.ID,
-		Password: passwordAndID.Password,
+	result := &userDomain.UserEntity{
+		ID:       userObtained.ID,
+		Name:     userObtained.Name,
+		Email:    userObtained.Email,
+		Password: userObtained.Password,
+		Verified: userObtained.Verified,
 	}
 
 	return result, nil
@@ -64,7 +66,6 @@ func (repo *UserRepository) GetAll(offset, limit int32) ([]*userDomain.UserEntit
 			ID:       userObtained.ID,
 			Name:     userObtained.Name,
 			Email:    userObtained.Email,
-			Password: userObtained.Password,
 			Verified: userObtained.Verified,
 		})
 	}
@@ -89,7 +90,6 @@ func (repo *UserRepository) Create(user *userDomain.UserEntity) (*userDomain.Use
 		ID:       userCreated.ID,
 		Name:     userCreated.Name,
 		Email:    userCreated.Email,
-		Password: userCreated.Password,
 		Verified: userCreated.Verified,
 	}, nil
 }
@@ -111,7 +111,6 @@ func (repo *UserRepository) Update(user *userDomain.UserEntity) (*userDomain.Use
 		ID:       userUpdated.ID,
 		Name:     userUpdated.Name,
 		Email:    userUpdated.Email,
-		Password: userUpdated.Password,
 		Verified: userUpdated.Verified,
 	}, nil
 }

@@ -30,7 +30,11 @@ INSERT INTO users (
   verified
 )
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, name, email, password, verified, created_at, updated_at
+RETURNING
+  id,
+  name,
+  email,
+  verified
 `
 
 type CreateUserParams struct {
@@ -41,7 +45,14 @@ type CreateUserParams struct {
 	Verified bool   `json:"verified"`
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+type CreateUserRow struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Verified bool   `json:"verified"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
 	row := q.db.QueryRowContext(ctx, createUser,
 		arg.ID,
 		arg.Name,
@@ -49,15 +60,12 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Password,
 		arg.Verified,
 	)
-	var i User
+	var i CreateUserRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Email,
-		&i.Password,
 		&i.Verified,
-		&i.CreatedAt,
-		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -73,49 +81,75 @@ func (q *Queries) DeleteUser(ctx context.Context, id string) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, name, email, password, verified, created_at, updated_at FROM users
+SELECT
+  id,
+  name,
+  email,
+  verified
+FROM users
 WHERE id = $1
 LIMIT 1
 `
 
-func (q *Queries) GetUser(ctx context.Context, id string) (User, error) {
+type GetUserRow struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Verified bool   `json:"verified"`
+}
+
+func (q *Queries) GetUser(ctx context.Context, id string) (GetUserRow, error) {
 	row := q.db.QueryRowContext(ctx, getUser, id)
-	var i User
+	var i GetUserRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.Verified,
+	)
+	return i, err
+}
+
+const getUserToAuth = `-- name: GetUserToAuth :one
+SELECT
+  id,
+  name,
+  email,
+  password,
+  verified
+FROM users
+WHERE email = $1
+LIMIT 1
+`
+
+type GetUserToAuthRow struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Verified bool   `json:"verified"`
+}
+
+func (q *Queries) GetUserToAuth(ctx context.Context, email string) (GetUserToAuthRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserToAuth, email)
+	var i GetUserToAuthRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Email,
 		&i.Password,
 		&i.Verified,
-		&i.CreatedAt,
-		&i.UpdatedAt,
 	)
 	return i, err
 }
 
-const getUserPasswordHashAndID = `-- name: GetUserPasswordHashAndID :one
+const listUsers = `-- name: ListUsers :many
 SELECT
   id,
-  password
+  name,
+  email,
+  verified
 FROM users
-WHERE email = $1
-LIMIT 1
-`
-
-type GetUserPasswordHashAndIDRow struct {
-	ID       string `json:"id"`
-	Password string `json:"password"`
-}
-
-func (q *Queries) GetUserPasswordHashAndID(ctx context.Context, email string) (GetUserPasswordHashAndIDRow, error) {
-	row := q.db.QueryRowContext(ctx, getUserPasswordHashAndID, email)
-	var i GetUserPasswordHashAndIDRow
-	err := row.Scan(&i.ID, &i.Password)
-	return i, err
-}
-
-const listUsers = `-- name: ListUsers :many
-SELECT id, name, email, password, verified, created_at, updated_at FROM users
 WHERE verified = true
 ORDER BY created_at DESC
 OFFSET $1
@@ -127,23 +161,27 @@ type ListUsersParams struct {
 	Limit  int32 `json:"limit"`
 }
 
-func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
+type ListUsersRow struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Verified bool   `json:"verified"`
+}
+
+func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUsersRow, error) {
 	rows, err := q.db.QueryContext(ctx, listUsers, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []User{}
+	items := []ListUsersRow{}
 	for rows.Next() {
-		var i User
+		var i ListUsersRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
 			&i.Email,
-			&i.Password,
 			&i.Verified,
-			&i.CreatedAt,
-			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -166,7 +204,11 @@ SET
   password = $4,
   verified = $5
 WHERE id = $1
-RETURNING id, name, email, password, verified, created_at, updated_at
+RETURNING
+  id,
+  name,
+  email,
+  verified
 `
 
 type UpdateUserParams struct {
@@ -177,7 +219,14 @@ type UpdateUserParams struct {
 	Verified bool   `json:"verified"`
 }
 
-func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
+type UpdateUserRow struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Verified bool   `json:"verified"`
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error) {
 	row := q.db.QueryRowContext(ctx, updateUser,
 		arg.ID,
 		arg.Name,
@@ -185,15 +234,12 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.Password,
 		arg.Verified,
 	)
-	var i User
+	var i UpdateUserRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Email,
-		&i.Password,
 		&i.Verified,
-		&i.CreatedAt,
-		&i.UpdatedAt,
 	)
 	return i, err
 }
