@@ -90,6 +90,30 @@ func (userRouter *UserRouter) GetUser(ctx context.Context, req *userProto.GetUse
 	return responseProto, nil
 }
 
+func (userRouter *UserRouter) GetUserPasswordHash(ctx context.Context, req *userProto.GetUserPasswordHashRequest) (*userProto.GetUserPasswordHashResponse, error) {
+	userObtained, err := userRouter.useCase.GetPasswordHashAndID(req.GetEmail())
+	if err != nil {
+		responseProto := formatError[userProto.GetUserPasswordHashResponse_Error, userProto.GetUserPasswordHashResponse](err)
+
+		return responseProto, nil
+	}
+
+	protoData := &userProto.PasswordHashAndId{
+		Id:   userObtained.ID,
+		Hash: userObtained.Password,
+	}
+
+	responseDataProto := &userProto.GetUserPasswordHashResponse_Data{
+		Data: protoData,
+	}
+
+	responseProto := &userProto.GetUserPasswordHashResponse{
+		Result: responseDataProto,
+	}
+
+	return responseProto, nil
+}
+
 func (userRouter *UserRouter) CreateUser(ctx context.Context, req *userProto.CreateUserRequest) (*userProto.CreateUserResponse, error) {
 	userCreated, err := userRouter.useCase.Create(req.GetName(), req.GetEmail(), req.GetPassword())
 	if err != nil {

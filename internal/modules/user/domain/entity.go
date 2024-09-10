@@ -7,3 +7,8 @@ type UserEntity struct {
 	Password string `json:"password"`
 	Verified bool   `json:"verified"`
 }
+
+type HashedPasswordAndID struct {
+	ID       string `json:"id"`
+	Password string `json:"password"`
+}

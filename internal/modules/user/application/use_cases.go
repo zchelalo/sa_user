@@ -31,6 +31,15 @@ func (useCase *UserUseCases) Get(id string) (*userDomain.UserEntity, error) {
 	return useCase.UserRepository.Get(id)
 }
 
+func (useCase *UserUseCases) GetPasswordHashAndID(email string) (*userDomain.HashedPasswordAndID, error) {
+	err := userDomain.IsEmailValid(email)
+	if err != nil {
+		return nil, err
+	}
+
+	return useCase.UserRepository.GetPasswordHashAndID(email)
+}
+
 func (useCase *UserUseCases) GetAll(page, limit int32) ([]*userDomain.UserEntity, *meta.Meta, error) {
 	usersCount, err := useCase.Count()
 	if err != nil {

@@ -19,11 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_GetUser_FullMethodName    = "/UserService/getUser"
-	UserService_GetUsers_FullMethodName   = "/UserService/getUsers"
-	UserService_CreateUser_FullMethodName = "/UserService/createUser"
-	UserService_UpdateUser_FullMethodName = "/UserService/updateUser"
-	UserService_DeleteUser_FullMethodName = "/UserService/deleteUser"
+	UserService_GetUser_FullMethodName             = "/UserService/getUser"
+	UserService_GetUserPasswordHash_FullMethodName = "/UserService/getUserPasswordHash"
+	UserService_GetUsers_FullMethodName            = "/UserService/getUsers"
+	UserService_CreateUser_FullMethodName          = "/UserService/createUser"
+	UserService_UpdateUser_FullMethodName          = "/UserService/updateUser"
+	UserService_DeleteUser_FullMethodName          = "/UserService/deleteUser"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -31,6 +32,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UserServiceClient interface {
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
+	GetUserPasswordHash(ctx context.Context, in *GetUserPasswordHashRequest, opts ...grpc.CallOption) (*GetUserPasswordHashResponse, error)
 	GetUsers(ctx context.Context, in *GetUsersRequest, opts ...grpc.CallOption) (*GetUsersResponse, error)
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*CreateUserResponse, error)
 	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UpdateUserResponse, error)
@@ -49,6 +51,16 @@ func (c *userServiceClient) GetUser(ctx context.Context, in *GetUserRequest, opt
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetUserResponse)
 	err := c.cc.Invoke(ctx, UserService_GetUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetUserPasswordHash(ctx context.Context, in *GetUserPasswordHashRequest, opts ...grpc.CallOption) (*GetUserPasswordHashResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserPasswordHashResponse)
+	err := c.cc.Invoke(ctx, UserService_GetUserPasswordHash_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +112,7 @@ func (c *userServiceClient) DeleteUser(ctx context.Context, in *DeleteUserReques
 // for forward compatibility.
 type UserServiceServer interface {
 	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
+	GetUserPasswordHash(context.Context, *GetUserPasswordHashRequest) (*GetUserPasswordHashResponse, error)
 	GetUsers(context.Context, *GetUsersRequest) (*GetUsersResponse, error)
 	CreateUser(context.Context, *CreateUserRequest) (*CreateUserResponse, error)
 	UpdateUser(context.Context, *UpdateUserRequest) (*UpdateUserResponse, error)
@@ -116,6 +129,9 @@ type UnimplementedUserServiceServer struct{}
 
 func (UnimplementedUserServiceServer) GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
+}
+func (UnimplementedUserServiceServer) GetUserPasswordHash(context.Context, *GetUserPasswordHashRequest) (*GetUserPasswordHashResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserPasswordHash not implemented")
 }
 func (UnimplementedUserServiceServer) GetUsers(context.Context, *GetUsersRequest) (*GetUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUsers not implemented")
@@ -164,6 +180,24 @@ func _UserService_GetUser_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserServiceServer).GetUser(ctx, req.(*GetUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetUserPasswordHash_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserPasswordHashRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetUserPasswordHash(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetUserPasswordHash_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetUserPasswordHash(ctx, req.(*GetUserPasswordHashRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -250,6 +284,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "getUser",
 			Handler:    _UserService_GetUser_Handler,
+		},
+		{
+			MethodName: "getUserPasswordHash",
+			Handler:    _UserService_GetUserPasswordHash_Handler,
 		},
 		{
 			MethodName: "getUsers",

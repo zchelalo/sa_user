@@ -93,6 +93,27 @@ func (q *Queries) GetUser(ctx context.Context, id string) (User, error) {
 	return i, err
 }
 
+const getUserPasswordHashAndID = `-- name: GetUserPasswordHashAndID :one
+SELECT
+  id,
+  password
+FROM users
+WHERE email = $1
+LIMIT 1
+`
+
+type GetUserPasswordHashAndIDRow struct {
+	ID       string `json:"id"`
+	Password string `json:"password"`
+}
+
+func (q *Queries) GetUserPasswordHashAndID(ctx context.Context, email string) (GetUserPasswordHashAndIDRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserPasswordHashAndID, email)
+	var i GetUserPasswordHashAndIDRow
+	err := row.Scan(&i.ID, &i.Password)
+	return i, err
+}
+
 const listUsers = `-- name: ListUsers :many
 SELECT id, name, email, password, verified, created_at, updated_at FROM users
 WHERE verified = true

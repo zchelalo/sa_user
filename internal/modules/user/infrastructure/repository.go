@@ -34,6 +34,20 @@ func (repo *UserRepository) Get(id string) (*userDomain.UserEntity, error) {
 	}, nil
 }
 
+func (repo *UserRepository) GetPasswordHashAndID(email string) (*userDomain.HashedPasswordAndID, error) {
+	passwordAndID, err := repo.store.GetUserPasswordHashAndID(repo.ctx, email)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &userDomain.HashedPasswordAndID{
+		ID:       passwordAndID.ID,
+		Password: passwordAndID.Password,
+	}
+
+	return result, nil
+}
+
 func (repo *UserRepository) GetAll(offset, limit int32) ([]*userDomain.UserEntity, error) {
 	arg := userDb.ListUsersParams{
 		Limit:  limit,
