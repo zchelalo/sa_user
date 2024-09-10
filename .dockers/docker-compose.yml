@@ -1,0 +1,47 @@
+version: '3.1'
+
+services:
+
+  sa_user_app:
+    build:
+      context: ../
+      dockerfile: .dockers/Dockerfile
+    container_name: sa_user_app
+    environment:
+      TZ: America/Hermosillo
+    volumes:
+      - ../:/usr/src/app
+    ports:
+      - 8001:8000
+    depends_on:
+      sa_user_db:
+        condition: service_started
+
+  sa_user_db:
+    image: postgres:15.2
+    container_name: sa_user_db
+    environment:
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: sa_user
+      TZ: America/Hermosillo
+    volumes:
+      - ../DB/postgresql:/var/lib/postgresql/data
+    ports:
+      - 5433:5432
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  sa_user_adminer:
+    image: adminer
+    container_name: sa_user_adminer
+    environment:
+      TZ: America/Hermosillo
+      ADMINER_DESIGN: "ng9"
+    ports:
+      - 8081:8080
+    depends_on:
+      sa_user_db:
+        condition: service_started

@@ -1,0 +1,3 @@
+[submodule "sa_proto"]
+	path = sa_proto
+	url = git@github.com:zchelalo/sa_proto.git
