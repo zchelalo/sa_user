@@ -145,7 +145,7 @@ func (userRouter *UserRouter) CreateUser(ctx context.Context, req *userProto.Cre
 
 func (userRouter *UserRouter) UpdateUser(ctx context.Context, req *userProto.UpdateUserRequest) (*userProto.UpdateUserResponse, error) {
 
-	userUpdated, err := userRouter.useCase.Update(req.GetId(), req.Name, req.Email, req.Password, req.Verified)
+	userUpdated, err := userRouter.useCase.Update(req.Id, req.Name, req.Email, req.Password, req.Verified)
 	if err != nil {
 		responseProto := formatError[userProto.UpdateUserResponse_Error, userProto.UpdateUserResponse](err)
 
@@ -226,7 +226,8 @@ func convertUserErrorToProtoError(err error) *userProto.Error {
 	}
 
 	error404 := []error{
-		userErrors.ErrIdRequired,
+		userErrors.ErrUserNotFound,
+		userErrors.ErrUsersNotFound,
 	}
 
 	error409 := []error{

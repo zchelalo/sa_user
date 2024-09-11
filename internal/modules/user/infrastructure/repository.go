@@ -2,8 +2,11 @@ package userInfrastructure
 
 import (
 	"context"
+	"database/sql"
 
+	"github.com/lib/pq"
 	userDomain "github.com/zchelalo/sa_user/internal/modules/user/domain"
+	userErrors "github.com/zchelalo/sa_user/internal/modules/user/errors"
 	userDb "github.com/zchelalo/sa_user/pkg/sqlc/user/db"
 )
 
@@ -22,6 +25,10 @@ func NewUserRepository(ctx context.Context, store userDb.Store) userDomain.UserR
 func (repo *UserRepository) Get(id string) (*userDomain.UserEntity, error) {
 	userObtained, err := repo.store.GetUser(repo.ctx, id)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, userErrors.ErrUserNotFound
+		}
+
 		return nil, err
 	}
 
@@ -36,6 +43,10 @@ func (repo *UserRepository) Get(id string) (*userDomain.UserEntity, error) {
 func (repo *UserRepository) GetToAuth(email string) (*userDomain.UserEntity, error) {
 	userObtained, err := repo.store.GetUserToAuth(repo.ctx, email)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, userErrors.ErrUserNotFound
+		}
+
 		return nil, err
 	}
 
@@ -57,7 +68,15 @@ func (repo *UserRepository) GetAll(offset, limit int32) ([]*userDomain.UserEntit
 	}
 	usersObtained, err := repo.store.ListUsers(repo.ctx, arg)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, userErrors.ErrUsersNotFound
+		}
+
 		return nil, err
+	}
+
+	if len(usersObtained) == 0 {
+		return nil, userErrors.ErrUserNotFound
 	}
 
 	users := make([]*userDomain.UserEntity, 0)
@@ -83,6 +102,13 @@ func (repo *UserRepository) Create(user *userDomain.UserEntity) (*userDomain.Use
 	}
 	userCreated, err := repo.store.CreateUser(repo.ctx, arg)
 	if err != nil {
+		if pqError, ok := err.(*pq.Error); ok {
+			switch pqError.Code.Name() {
+			case "unique_violation":
+				return nil, userErrors.ErrEmailAlreadyExists
+			}
+		}
+
 		return nil, err
 	}
 
@@ -127,6 +153,10 @@ func (repo *UserRepository) Delete(id string) error {
 func (repo *UserRepository) Count() (int32, error) {
 	count, err := repo.store.CountUsers(repo.ctx)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, userErrors.ErrUsersNotFound
+		}
+
 		return 0, err
 	}
 
