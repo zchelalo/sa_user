@@ -38,9 +38,9 @@ func (userRouter *UserRouter) GetUsers(ctx context.Context, req *userProto.GetUs
 		TotalCount: meta.TotalCount,
 	}
 
-	usersProto := []*userProto.User{}
+	usersProto := []*userProto.UserData{}
 	for _, user := range usersObtained {
-		protoUser := &userProto.User{
+		protoUser := &userProto.UserData{
 			Id:       user.ID,
 			Name:     user.Name,
 			Email:    user.Email,
@@ -72,7 +72,7 @@ func (userRouter *UserRouter) GetUser(ctx context.Context, req *userProto.GetUse
 		return responseProto, nil
 	}
 
-	protoUser := &userProto.User{
+	protoUser := &userProto.UserData{
 		Id:       userObtained.ID,
 		Name:     userObtained.Name,
 		Email:    userObtained.Email,
@@ -125,7 +125,7 @@ func (userRouter *UserRouter) CreateUser(ctx context.Context, req *userProto.Cre
 		return responseProto, nil
 	}
 
-	protoUser := &userProto.User{
+	protoUser := &userProto.UserData{
 		Id:       userCreated.ID,
 		Name:     userCreated.Name,
 		Email:    userCreated.Email,
@@ -152,7 +152,7 @@ func (userRouter *UserRouter) UpdateUser(ctx context.Context, req *userProto.Upd
 		return responseProto, nil
 	}
 
-	protoUser := &userProto.User{
+	protoUser := &userProto.UserData{
 		Id:       userUpdated.ID,
 		Name:     userUpdated.Name,
 		Email:    userUpdated.Email,
