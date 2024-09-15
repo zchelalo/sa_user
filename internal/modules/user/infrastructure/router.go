@@ -203,7 +203,7 @@ func formatError[TResponeError any, TResponse any](err error) *TResponse {
 	return responseProto
 }
 
-func convertUserErrorToProtoError(err error) *userProto.Error {
+func convertUserErrorToProtoError(err error) *userProto.UserError {
 	if err == nil {
 		return nil
 	}
@@ -248,7 +248,7 @@ func convertUserErrorToProtoError(err error) *userProto.Error {
 		message = err.Error()
 	}
 
-	errorProto := &userProto.Error{
+	errorProto := &userProto.UserError{
 		Code:    int32(utils.ConvertStatusCodeToProtoCode(code)),
 		Message: message,
 	}
