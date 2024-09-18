@@ -2,7 +2,7 @@ package connection
 
 import (
 	"database/sql"
-	"log"
+	"fmt"
 
 	_ "github.com/lib/pq"
 )
@@ -10,7 +10,7 @@ import (
 func NewConnection(driver, source string) (*sql.DB, error) {
 	conn, err := sql.Open(driver, source)
 	if err != nil {
-		log.Fatal("cannot connect to db:", err)
+		return nil, fmt.Errorf("cannot connect to db: %w", err)
 	}
 
 	return conn, nil
