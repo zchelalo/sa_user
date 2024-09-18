@@ -15,5 +15,7 @@ var ErrEmailAlreadyExists = errors.New("email already exists")
 var ErrPasswordRequired = errors.New("password is required")
 var ErrPasswordInvalid = errors.New("password must be at least 8 characters long")
 
+var ErrVerifiedInvalid = errors.New("verified must be a boolean")
+
 var ErrUserNotFound = errors.New("user not found")
 var ErrUsersNotFound = errors.New("users not found")

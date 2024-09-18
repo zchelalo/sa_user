@@ -2,11 +2,10 @@ package userApplication
 
 import (
 	"context"
-	"log"
 
 	userDomain "github.com/zchelalo/sa_user/internal/modules/user/domain"
-	"github.com/zchelalo/sa_user/pkg/config"
 	"github.com/zchelalo/sa_user/pkg/meta"
+	"github.com/zchelalo/sa_user/pkg/util"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -46,10 +45,7 @@ func (useCase *UserUseCases) GetAll(page, limit int32) ([]*userDomain.UserEntity
 		return nil, nil, err
 	}
 
-	config, err := config.LoadConfig(".")
-	if err != nil {
-		log.Fatal("cannot load config:", err)
-	}
+	config := util.GetConfig()
 
 	meta, err := meta.New(page, limit, int32(usersCount), config.PaginatorLimitDefault)
 	if err != nil {

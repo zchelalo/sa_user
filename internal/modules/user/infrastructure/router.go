@@ -2,16 +2,17 @@ package userInfrastructure
 
 import (
 	"context"
-	"reflect"
 
 	userApplication "github.com/zchelalo/sa_user/internal/modules/user/application"
 	userErrors "github.com/zchelalo/sa_user/internal/modules/user/errors"
 	userProto "github.com/zchelalo/sa_user/pkg/proto/user"
 	userDb "github.com/zchelalo/sa_user/pkg/sqlc/user/db"
-	"github.com/zchelalo/sa_user/pkg/utils"
+	"github.com/zchelalo/sa_user/pkg/util"
+	"google.golang.org/grpc/codes"
 )
 
 type UserRouter struct {
+	ctx     context.Context
 	useCase *userApplication.UserUseCases
 	userProto.UnimplementedUserServiceServer
 }
@@ -20,13 +21,32 @@ func NewUserRouter(store userDb.Store, ctx context.Context) *UserRouter {
 	userRepository := NewUserRepository(ctx, store)
 	userUseCase := userApplication.NewUserUseCases(ctx, userRepository)
 
-	return &UserRouter{useCase: userUseCase}
+	return &UserRouter{
+		ctx:     ctx,
+		useCase: userUseCase,
+	}
 }
 
 func (userRouter *UserRouter) GetUsers(ctx context.Context, req *userProto.GetUsersRequest) (*userProto.GetUsersResponse, error) {
+	// Create a new context with the request context
+	// ctx = context.WithValue(userRouter.ctx, "requestCtx", ctx)
+
 	usersObtained, meta, err := userRouter.useCase.GetAll(req.GetPage(), req.GetLimit())
 	if err != nil {
-		responseProto := formatError[userProto.GetUsersResponse_Error, userProto.GetUsersResponse](err)
+		userError := &userProto.UserError{}
+
+		if err == userErrors.ErrUsersNotFound {
+			userError.Code = int32(codes.NotFound)
+			userError.Message = err.Error()
+		}
+
+		responseError := &userProto.GetUsersResponse_Error{
+			Error: userError,
+		}
+
+		responseProto := &userProto.GetUsersResponse{
+			Result: responseError,
+		}
 
 		return responseProto, nil
 	}
@@ -67,7 +87,26 @@ func (userRouter *UserRouter) GetUsers(ctx context.Context, req *userProto.GetUs
 func (userRouter *UserRouter) GetUser(ctx context.Context, req *userProto.GetUserRequest) (*userProto.GetUserResponse, error) {
 	userObtained, err := userRouter.useCase.Get(req.GetId())
 	if err != nil {
-		responseProto := formatError[userProto.GetUserResponse_Error, userProto.GetUserResponse](err)
+		userError := &userProto.UserError{}
+
+		if err == userErrors.ErrUserNotFound {
+			userError.Code = int32(codes.NotFound)
+			userError.Message = err.Error()
+		} else if err == userErrors.ErrIdRequired || err == userErrors.ErrIdInvalid {
+			userError.Code = int32(codes.InvalidArgument)
+			userError.Message = err.Error()
+		} else {
+			userError.Code = int32(codes.Internal)
+			userError.Message = err.Error()
+		}
+
+		responseError := &userProto.GetUserResponse_Error{
+			Error: userError,
+		}
+
+		responseProto := &userProto.GetUserResponse{
+			Result: responseError,
+		}
 
 		return responseProto, nil
 	}
@@ -93,7 +132,26 @@ func (userRouter *UserRouter) GetUser(ctx context.Context, req *userProto.GetUse
 func (userRouter *UserRouter) GetUserToAuth(ctx context.Context, req *userProto.GetUserToAuthRequest) (*userProto.GetUserToAuthResponse, error) {
 	userObtained, err := userRouter.useCase.GetToAuth(req.GetEmail())
 	if err != nil {
-		responseProto := formatError[userProto.GetUserToAuthResponse_Error, userProto.GetUserToAuthResponse](err)
+		userError := &userProto.UserError{}
+
+		if err == userErrors.ErrUserNotFound {
+			userError.Code = int32(codes.NotFound)
+			userError.Message = err.Error()
+		} else if err == userErrors.ErrEmailRequired || err == userErrors.ErrEmailInvalid {
+			userError.Code = int32(codes.InvalidArgument)
+			userError.Message = err.Error()
+		} else {
+			userError.Code = int32(codes.Internal)
+			userError.Message = err.Error()
+		}
+
+		responseError := &userProto.GetUserToAuthResponse_Error{
+			Error: userError,
+		}
+
+		responseProto := &userProto.GetUserToAuthResponse{
+			Result: responseError,
+		}
 
 		return responseProto, nil
 	}
@@ -120,7 +178,37 @@ func (userRouter *UserRouter) GetUserToAuth(ctx context.Context, req *userProto.
 func (userRouter *UserRouter) CreateUser(ctx context.Context, req *userProto.CreateUserRequest) (*userProto.CreateUserResponse, error) {
 	userCreated, err := userRouter.useCase.Create(req.GetName(), req.GetEmail(), req.GetPassword())
 	if err != nil {
-		responseProto := formatError[userProto.CreateUserResponse_Error, userProto.CreateUserResponse](err)
+		userError := &userProto.UserError{}
+
+		errorInvalidArgument := []error{
+			userErrors.ErrNameRequired,
+			userErrors.ErrNameInvalid,
+			userErrors.ErrEmailRequired,
+			userErrors.ErrEmailInvalid,
+			userErrors.ErrPasswordRequired,
+			userErrors.ErrPasswordInvalid,
+		}
+
+		isInvalidArgumentError := util.IsErrorType(err, errorInvalidArgument)
+
+		if isInvalidArgumentError {
+			userError.Code = int32(codes.InvalidArgument)
+			userError.Message = err.Error()
+		} else if err == userErrors.ErrEmailAlreadyExists {
+			userError.Code = int32(codes.AlreadyExists)
+			userError.Message = err.Error()
+		} else {
+			userError.Code = int32(codes.Internal)
+			userError.Message = err.Error()
+		}
+
+		responseError := &userProto.CreateUserResponse_Error{
+			Error: userError,
+		}
+
+		responseProto := &userProto.CreateUserResponse{
+			Result: responseError,
+		}
 
 		return responseProto, nil
 	}
@@ -147,7 +235,40 @@ func (userRouter *UserRouter) UpdateUser(ctx context.Context, req *userProto.Upd
 
 	userUpdated, err := userRouter.useCase.Update(req.Id, req.Name, req.Email, req.Password, req.Verified)
 	if err != nil {
-		responseProto := formatError[userProto.UpdateUserResponse_Error, userProto.UpdateUserResponse](err)
+		userError := &userProto.UserError{}
+
+		errorInvalidArgument := []error{
+			userErrors.ErrIdRequired,
+			userErrors.ErrIdInvalid,
+			userErrors.ErrNameInvalid,
+			userErrors.ErrEmailInvalid,
+			userErrors.ErrPasswordInvalid,
+			userErrors.ErrVerifiedInvalid,
+		}
+
+		isInvalidArgumentError := util.IsErrorType(err, errorInvalidArgument)
+
+		if isInvalidArgumentError {
+			userError.Code = int32(codes.InvalidArgument)
+			userError.Message = err.Error()
+		} else if err == userErrors.ErrUserNotFound {
+			userError.Code = int32(codes.NotFound)
+			userError.Message = err.Error()
+		} else if err == userErrors.ErrEmailAlreadyExists {
+			userError.Code = int32(codes.AlreadyExists)
+			userError.Message = err.Error()
+		} else {
+			userError.Code = int32(codes.Internal)
+			userError.Message = err.Error()
+		}
+
+		responseError := &userProto.UpdateUserResponse_Error{
+			Error: userError,
+		}
+
+		responseProto := &userProto.UpdateUserResponse{
+			Result: responseError,
+		}
 
 		return responseProto, nil
 	}
@@ -173,7 +294,26 @@ func (userRouter *UserRouter) UpdateUser(ctx context.Context, req *userProto.Upd
 func (userRouter *UserRouter) DeleteUser(ctx context.Context, req *userProto.DeleteUserRequest) (*userProto.DeleteUserResponse, error) {
 	err := userRouter.useCase.Delete(req.GetId())
 	if err != nil {
-		responseProto := formatError[userProto.DeleteUserResponse_Error, userProto.DeleteUserResponse](err)
+		userError := &userProto.UserError{}
+
+		if err == userErrors.ErrUserNotFound {
+			userError.Code = int32(codes.NotFound)
+			userError.Message = err.Error()
+		} else if err == userErrors.ErrIdRequired || err == userErrors.ErrIdInvalid {
+			userError.Code = int32(codes.InvalidArgument)
+			userError.Message = err.Error()
+		} else {
+			userError.Code = int32(codes.Internal)
+			userError.Message = err.Error()
+		}
+
+		responseError := &userProto.DeleteUserResponse_Error{
+			Error: userError,
+		}
+
+		responseProto := &userProto.DeleteUserResponse{
+			Result: responseError,
+		}
 
 		return responseProto, nil
 	}
@@ -185,73 +325,4 @@ func (userRouter *UserRouter) DeleteUser(ctx context.Context, req *userProto.Del
 	}
 
 	return responseProto, nil
-}
-
-func formatError[TResponeError any, TResponse any](err error) *TResponse {
-	if err == nil {
-		return nil
-	}
-
-	errorProto := convertUserErrorToProtoError(err)
-
-	responseErrorProto := new(TResponeError)
-	reflect.ValueOf(responseErrorProto).Elem().FieldByName("Error").Set(reflect.ValueOf(errorProto))
-
-	responseProto := new(TResponse)
-	reflect.ValueOf(responseProto).Elem().FieldByName("Result").Set(reflect.ValueOf(responseErrorProto))
-
-	return responseProto
-}
-
-func convertUserErrorToProtoError(err error) *userProto.UserError {
-	if err == nil {
-		return nil
-	}
-
-	var code int32
-	var message string
-
-	error400 := []error{
-		userErrors.ErrEmailRequired,
-		userErrors.ErrEmailInvalid,
-
-		userErrors.ErrIdRequired,
-		userErrors.ErrIdInvalid,
-
-		userErrors.ErrNameRequired,
-		userErrors.ErrNameInvalid,
-
-		userErrors.ErrPasswordRequired,
-		userErrors.ErrPasswordInvalid,
-	}
-
-	error404 := []error{
-		userErrors.ErrUserNotFound,
-		userErrors.ErrUsersNotFound,
-	}
-
-	error409 := []error{
-		userErrors.ErrEmailAlreadyExists,
-	}
-
-	if utils.IsErrorType(err, error400) {
-		code = 400
-		message = err.Error()
-	} else if utils.IsErrorType(err, error404) {
-		code = 404
-		message = err.Error()
-	} else if utils.IsErrorType(err, error409) {
-		code = 409
-		message = err.Error()
-	} else {
-		code = 500
-		message = err.Error()
-	}
-
-	errorProto := &userProto.UserError{
-		Code:    int32(utils.ConvertStatusCodeToProtoCode(code)),
-		Message: message,
-	}
-
-	return errorProto
 }
