@@ -19,6 +19,9 @@ compose:
 composebuild:
 	docker compose -f ./.dockers/docker-compose.yml up --build
 
+composebuilddetached:
+	docker compose -f ./.dockers/docker-compose.yml up --build -d
+
 sqlc:
 	sqlc generate
 
