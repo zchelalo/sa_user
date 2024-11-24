@@ -51,7 +51,7 @@ func (userRouter *UserRouter) GetUsers(ctx context.Context, req *userProto.GetUs
 		return responseProto, nil
 	}
 
-	metaProto := &userProto.Meta{
+	metaProto := &userProto.UserMeta{
 		Page:       meta.Page,
 		PerPage:    meta.PerPage,
 		Count:      meta.PageCount,
