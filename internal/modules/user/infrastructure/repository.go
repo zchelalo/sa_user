@@ -76,7 +76,7 @@ func (repo *UserRepository) GetAll(offset, limit int32) ([]*userDomain.UserEntit
 	}
 
 	if len(usersObtained) == 0 {
-		return nil, userErrors.ErrUserNotFound
+		return nil, userErrors.ErrUsersNotFound
 	}
 
 	users := make([]*userDomain.UserEntity, 0)
