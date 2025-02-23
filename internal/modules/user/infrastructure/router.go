@@ -4,8 +4,8 @@ import (
 	"context"
 
 	userApplication "github.com/zchelalo/sa_user/internal/modules/user/application"
-	userErrors "github.com/zchelalo/sa_user/internal/modules/user/errors"
-	userProto "github.com/zchelalo/sa_user/pkg/proto/user"
+	Errors "github.com/zchelalo/sa_user/internal/modules/user/errors"
+	"github.com/zchelalo/sa_user/pkg/proto"
 	userDb "github.com/zchelalo/sa_user/pkg/sqlc/user/db"
 	"github.com/zchelalo/sa_user/pkg/util"
 	"google.golang.org/grpc/codes"
@@ -14,7 +14,7 @@ import (
 type UserRouter struct {
 	ctx     context.Context
 	useCase *userApplication.UserUseCases
-	userProto.UnimplementedUserServiceServer
+	proto.UnimplementedUserServiceServer
 }
 
 func NewUserRouter(store userDb.Store, ctx context.Context) *UserRouter {
@@ -27,40 +27,40 @@ func NewUserRouter(store userDb.Store, ctx context.Context) *UserRouter {
 	}
 }
 
-func (userRouter *UserRouter) GetUsers(ctx context.Context, req *userProto.GetUsersRequest) (*userProto.GetUsersResponse, error) {
+func (userRouter *UserRouter) GetUsers(ctx context.Context, req *proto.GetUsersRequest) (*proto.GetUsersResponse, error) {
 	// Create a new context with the request context
 	// ctx = context.WithValue(userRouter.ctx, "requestCtx", ctx)
 
 	usersObtained, meta, err := userRouter.useCase.GetAll(req.GetPage(), req.GetLimit())
 	if err != nil {
-		userError := &userProto.UserError{}
+		Error := &proto.Error{}
 
-		if err == userErrors.ErrUsersNotFound {
-			userError.Code = int32(codes.NotFound)
-			userError.Message = err.Error()
+		if err == Errors.ErrUsersNotFound {
+			Error.Code = int32(codes.NotFound)
+			Error.Message = err.Error()
 		}
 
-		responseError := &userProto.GetUsersResponse_Error{
-			Error: userError,
+		responseError := &proto.GetUsersResponse_Error{
+			Error: Error,
 		}
 
-		responseProto := &userProto.GetUsersResponse{
+		responseProto := &proto.GetUsersResponse{
 			Result: responseError,
 		}
 
 		return responseProto, nil
 	}
 
-	metaProto := &userProto.UserMeta{
+	metaProto := &proto.Meta{
 		Page:       meta.Page,
 		PerPage:    meta.PerPage,
 		Count:      meta.PageCount,
 		TotalCount: meta.TotalCount,
 	}
 
-	usersProto := []*userProto.UserData{}
+	usersProto := []*proto.UserData{}
 	for _, user := range usersObtained {
-		protoUser := &userProto.UserData{
+		protoUser := &proto.UserData{
 			Id:       user.ID,
 			Name:     user.Name,
 			Email:    user.Email,
@@ -70,93 +70,93 @@ func (userRouter *UserRouter) GetUsers(ctx context.Context, req *userProto.GetUs
 		usersProto = append(usersProto, protoUser)
 	}
 
-	responseDataProto := &userProto.GetUsersResponse_Data{
-		Data: &userProto.UsersWithMeta{
+	responseDataProto := &proto.GetUsersResponse_Data{
+		Data: &proto.UsersWithMeta{
 			Users: usersProto,
 			Meta:  metaProto,
 		},
 	}
 
-	responseProto := &userProto.GetUsersResponse{
+	responseProto := &proto.GetUsersResponse{
 		Result: responseDataProto,
 	}
 
 	return responseProto, nil
 }
 
-func (userRouter *UserRouter) GetUser(ctx context.Context, req *userProto.GetUserRequest) (*userProto.GetUserResponse, error) {
+func (userRouter *UserRouter) GetUser(ctx context.Context, req *proto.GetUserRequest) (*proto.GetUserResponse, error) {
 	userObtained, err := userRouter.useCase.Get(req.GetId())
 	if err != nil {
-		userError := &userProto.UserError{}
+		Error := &proto.Error{}
 
-		if err == userErrors.ErrUserNotFound {
-			userError.Code = int32(codes.NotFound)
-			userError.Message = err.Error()
-		} else if err == userErrors.ErrIdRequired || err == userErrors.ErrIdInvalid {
-			userError.Code = int32(codes.InvalidArgument)
-			userError.Message = err.Error()
+		if err == Errors.ErrUserNotFound {
+			Error.Code = int32(codes.NotFound)
+			Error.Message = err.Error()
+		} else if err == Errors.ErrIdRequired || err == Errors.ErrIdInvalid {
+			Error.Code = int32(codes.InvalidArgument)
+			Error.Message = err.Error()
 		} else {
-			userError.Code = int32(codes.Internal)
-			userError.Message = err.Error()
+			Error.Code = int32(codes.Internal)
+			Error.Message = err.Error()
 		}
 
-		responseError := &userProto.GetUserResponse_Error{
-			Error: userError,
+		responseError := &proto.GetUserResponse_Error{
+			Error: Error,
 		}
 
-		responseProto := &userProto.GetUserResponse{
+		responseProto := &proto.GetUserResponse{
 			Result: responseError,
 		}
 
 		return responseProto, nil
 	}
 
-	protoUser := &userProto.UserData{
+	protoUser := &proto.UserData{
 		Id:       userObtained.ID,
 		Name:     userObtained.Name,
 		Email:    userObtained.Email,
 		Verified: userObtained.Verified,
 	}
 
-	responseDataProto := &userProto.GetUserResponse_User{
+	responseDataProto := &proto.GetUserResponse_User{
 		User: protoUser,
 	}
 
-	responseProto := &userProto.GetUserResponse{
+	responseProto := &proto.GetUserResponse{
 		Result: responseDataProto,
 	}
 
 	return responseProto, nil
 }
 
-func (userRouter *UserRouter) GetUserToAuth(ctx context.Context, req *userProto.GetUserToAuthRequest) (*userProto.GetUserToAuthResponse, error) {
+func (userRouter *UserRouter) GetUserToAuth(ctx context.Context, req *proto.GetUserToAuthRequest) (*proto.GetUserToAuthResponse, error) {
 	userObtained, err := userRouter.useCase.GetToAuth(req.GetEmail())
 	if err != nil {
-		userError := &userProto.UserError{}
+		Error := &proto.Error{}
 
-		if err == userErrors.ErrUserNotFound {
-			userError.Code = int32(codes.NotFound)
-			userError.Message = err.Error()
-		} else if err == userErrors.ErrEmailRequired || err == userErrors.ErrEmailInvalid {
-			userError.Code = int32(codes.InvalidArgument)
-			userError.Message = err.Error()
+		if err == Errors.ErrUserNotFound {
+			Error.Code = int32(codes.NotFound)
+			Error.Message = err.Error()
+		} else if err == Errors.ErrEmailRequired || err == Errors.ErrEmailInvalid {
+			Error.Code = int32(codes.InvalidArgument)
+			Error.Message = err.Error()
 		} else {
-			userError.Code = int32(codes.Internal)
-			userError.Message = err.Error()
+			Error.Code = int32(codes.Internal)
+			Error.Message = err.Error()
 		}
 
-		responseError := &userProto.GetUserToAuthResponse_Error{
-			Error: userError,
+		responseError := &proto.GetUserToAuthResponse_Error{
+			Error: Error,
 		}
 
-		responseProto := &userProto.GetUserToAuthResponse{
+		responseProto := &proto.GetUserToAuthResponse{
 			Result: responseError,
 		}
 
 		return responseProto, nil
 	}
 
-	protoUser := &userProto.UserWithPassword{
+	protoUser := &proto.UserWithPassword{
 		Id:       userObtained.ID,
 		Name:     userObtained.Name,
 		Email:    userObtained.Email,
@@ -164,162 +164,162 @@ func (userRouter *UserRouter) GetUserToAuth(ctx context.Context, req *userProto.
 		Verified: userObtained.Verified,
 	}
 
-	responseDataProto := &userProto.GetUserToAuthResponse_User{
+	responseDataProto := &proto.GetUserToAuthResponse_User{
 		User: protoUser,
 	}
 
-	responseProto := &userProto.GetUserToAuthResponse{
+	responseProto := &proto.GetUserToAuthResponse{
 		Result: responseDataProto,
 	}
 
 	return responseProto, nil
 }
 
-func (userRouter *UserRouter) CreateUser(ctx context.Context, req *userProto.CreateUserRequest) (*userProto.CreateUserResponse, error) {
+func (userRouter *UserRouter) CreateUser(ctx context.Context, req *proto.CreateUserRequest) (*proto.CreateUserResponse, error) {
 	userCreated, err := userRouter.useCase.Create(req.GetName(), req.GetEmail(), req.GetPassword())
 	if err != nil {
-		userError := &userProto.UserError{}
+		Error := &proto.Error{}
 
 		errorInvalidArgument := []error{
-			userErrors.ErrNameRequired,
-			userErrors.ErrNameInvalid,
-			userErrors.ErrEmailRequired,
-			userErrors.ErrEmailInvalid,
-			userErrors.ErrPasswordRequired,
-			userErrors.ErrPasswordInvalid,
+			Errors.ErrNameRequired,
+			Errors.ErrNameInvalid,
+			Errors.ErrEmailRequired,
+			Errors.ErrEmailInvalid,
+			Errors.ErrPasswordRequired,
+			Errors.ErrPasswordInvalid,
 		}
 
 		isInvalidArgumentError := util.IsErrorType(err, errorInvalidArgument)
 
 		if isInvalidArgumentError {
-			userError.Code = int32(codes.InvalidArgument)
-			userError.Message = err.Error()
-		} else if err == userErrors.ErrEmailAlreadyExists {
-			userError.Code = int32(codes.AlreadyExists)
-			userError.Message = err.Error()
+			Error.Code = int32(codes.InvalidArgument)
+			Error.Message = err.Error()
+		} else if err == Errors.ErrEmailAlreadyExists {
+			Error.Code = int32(codes.AlreadyExists)
+			Error.Message = err.Error()
 		} else {
-			userError.Code = int32(codes.Internal)
-			userError.Message = err.Error()
+			Error.Code = int32(codes.Internal)
+			Error.Message = err.Error()
 		}
 
-		responseError := &userProto.CreateUserResponse_Error{
-			Error: userError,
+		responseError := &proto.CreateUserResponse_Error{
+			Error: Error,
 		}
 
-		responseProto := &userProto.CreateUserResponse{
+		responseProto := &proto.CreateUserResponse{
 			Result: responseError,
 		}
 
 		return responseProto, nil
 	}
 
-	protoUser := &userProto.UserData{
+	protoUser := &proto.UserData{
 		Id:       userCreated.ID,
 		Name:     userCreated.Name,
 		Email:    userCreated.Email,
 		Verified: userCreated.Verified,
 	}
 
-	responseDataProto := &userProto.CreateUserResponse_User{
+	responseDataProto := &proto.CreateUserResponse_User{
 		User: protoUser,
 	}
 
-	responseProto := &userProto.CreateUserResponse{
+	responseProto := &proto.CreateUserResponse{
 		Result: responseDataProto,
 	}
 
 	return responseProto, nil
 }
 
-func (userRouter *UserRouter) UpdateUser(ctx context.Context, req *userProto.UpdateUserRequest) (*userProto.UpdateUserResponse, error) {
+func (userRouter *UserRouter) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) (*proto.UpdateUserResponse, error) {
 
 	userUpdated, err := userRouter.useCase.Update(req.Id, req.Name, req.Email, req.Password, req.Verified)
 	if err != nil {
-		userError := &userProto.UserError{}
+		Error := &proto.Error{}
 
 		errorInvalidArgument := []error{
-			userErrors.ErrIdRequired,
-			userErrors.ErrIdInvalid,
-			userErrors.ErrNameInvalid,
-			userErrors.ErrEmailInvalid,
-			userErrors.ErrPasswordInvalid,
-			userErrors.ErrVerifiedInvalid,
+			Errors.ErrIdRequired,
+			Errors.ErrIdInvalid,
+			Errors.ErrNameInvalid,
+			Errors.ErrEmailInvalid,
+			Errors.ErrPasswordInvalid,
+			Errors.ErrVerifiedInvalid,
 		}
 
 		isInvalidArgumentError := util.IsErrorType(err, errorInvalidArgument)
 
 		if isInvalidArgumentError {
-			userError.Code = int32(codes.InvalidArgument)
-			userError.Message = err.Error()
-		} else if err == userErrors.ErrUserNotFound {
-			userError.Code = int32(codes.NotFound)
-			userError.Message = err.Error()
-		} else if err == userErrors.ErrEmailAlreadyExists {
-			userError.Code = int32(codes.AlreadyExists)
-			userError.Message = err.Error()
+			Error.Code = int32(codes.InvalidArgument)
+			Error.Message = err.Error()
+		} else if err == Errors.ErrUserNotFound {
+			Error.Code = int32(codes.NotFound)
+			Error.Message = err.Error()
+		} else if err == Errors.ErrEmailAlreadyExists {
+			Error.Code = int32(codes.AlreadyExists)
+			Error.Message = err.Error()
 		} else {
-			userError.Code = int32(codes.Internal)
-			userError.Message = err.Error()
+			Error.Code = int32(codes.Internal)
+			Error.Message = err.Error()
 		}
 
-		responseError := &userProto.UpdateUserResponse_Error{
-			Error: userError,
+		responseError := &proto.UpdateUserResponse_Error{
+			Error: Error,
 		}
 
-		responseProto := &userProto.UpdateUserResponse{
+		responseProto := &proto.UpdateUserResponse{
 			Result: responseError,
 		}
 
 		return responseProto, nil
 	}
 
-	protoUser := &userProto.UserData{
+	protoUser := &proto.UserData{
 		Id:       userUpdated.ID,
 		Name:     userUpdated.Name,
 		Email:    userUpdated.Email,
 		Verified: userUpdated.Verified,
 	}
 
-	responseDataProto := &userProto.UpdateUserResponse_User{
+	responseDataProto := &proto.UpdateUserResponse_User{
 		User: protoUser,
 	}
 
-	responseProto := &userProto.UpdateUserResponse{
+	responseProto := &proto.UpdateUserResponse{
 		Result: responseDataProto,
 	}
 
 	return responseProto, nil
 }
 
-func (userRouter *UserRouter) DeleteUser(ctx context.Context, req *userProto.DeleteUserRequest) (*userProto.DeleteUserResponse, error) {
+func (userRouter *UserRouter) DeleteUser(ctx context.Context, req *proto.DeleteUserRequest) (*proto.DeleteUserResponse, error) {
 	err := userRouter.useCase.Delete(req.GetId())
 	if err != nil {
-		userError := &userProto.UserError{}
+		Error := &proto.Error{}
 
-		if err == userErrors.ErrUserNotFound {
-			userError.Code = int32(codes.NotFound)
-			userError.Message = err.Error()
-		} else if err == userErrors.ErrIdRequired || err == userErrors.ErrIdInvalid {
-			userError.Code = int32(codes.InvalidArgument)
-			userError.Message = err.Error()
+		if err == Errors.ErrUserNotFound {
+			Error.Code = int32(codes.NotFound)
+			Error.Message = err.Error()
+		} else if err == Errors.ErrIdRequired || err == Errors.ErrIdInvalid {
+			Error.Code = int32(codes.InvalidArgument)
+			Error.Message = err.Error()
 		} else {
-			userError.Code = int32(codes.Internal)
-			userError.Message = err.Error()
+			Error.Code = int32(codes.Internal)
+			Error.Message = err.Error()
 		}
 
-		responseError := &userProto.DeleteUserResponse_Error{
-			Error: userError,
+		responseError := &proto.DeleteUserResponse_Error{
+			Error: Error,
 		}
 
-		responseProto := &userProto.DeleteUserResponse{
+		responseProto := &proto.DeleteUserResponse{
 			Result: responseError,
 		}
 
 		return responseProto, nil
 	}
 
-	responseProto := &userProto.DeleteUserResponse{
-		Result: &userProto.DeleteUserResponse_Success{
+	responseProto := &proto.DeleteUserResponse{
+		Result: &proto.DeleteUserResponse_Success{
 			Success: true,
 		},
 	}

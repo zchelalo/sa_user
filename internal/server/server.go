@@ -8,7 +8,7 @@ import (
 	_ "github.com/lib/pq"
 	userInfrastructure "github.com/zchelalo/sa_user/internal/modules/user/infrastructure"
 	"github.com/zchelalo/sa_user/pkg/bootstrap"
-	userProto "github.com/zchelalo/sa_user/pkg/proto/user"
+	"github.com/zchelalo/sa_user/pkg/proto"
 	userDb "github.com/zchelalo/sa_user/pkg/sqlc/user/db"
 	"github.com/zchelalo/sa_user/pkg/util"
 	"google.golang.org/grpc"
@@ -36,7 +36,7 @@ func Start() {
 	}
 
 	server := grpc.NewServer()
-	userProto.RegisterUserServiceServer(server, userRouter)
+	proto.RegisterUserServiceServer(server, userRouter)
 
 	reflection.Register(server)
 
