@@ -1,26 +1,30 @@
 URI_DB=postgresql://postgres:example@localhost:5433/sa_user?sslmode=disable
 MIGRATE=migrate -path pkg/sqlc/migration -database "$(URI_DB)" -verbose
+DOCKER_COMPOSE_FILE = ./.dockers/docker-compose.yml
 
-migrateup:
+migrate-up:
 	$(MIGRATE) up
 
-migrateup1:
+migrate-up-1:
 	$(MIGRATE) up 1
 
-migratedown:
+migrate-down:
 	$(MIGRATE) down
 
-migratedown1:
+migrate-down-1:
 	$(MIGRATE) down 1
 
 compose:
-	docker compose -f ./.dockers/docker-compose.yml up
+	docker compose -f $(DOCKER_COMPOSE_FILE) up
 
-composebuild:
-	docker compose -f ./.dockers/docker-compose.yml up --build
+compose-build:
+	docker compose -f $(DOCKER_COMPOSE_FILE) up --build
 
-composebuilddetached:
-	docker compose -f ./.dockers/docker-compose.yml up --build -d
+compose-build-detached:
+	docker compose -f $(DOCKER_COMPOSE_FILE) up --build -d
+
+create-envs:
+	cp .env.example app.env
 
 sqlc:
 	sqlc generate
@@ -32,4 +36,4 @@ proto:
 		--go-grpc_out=./pkg/proto --go-grpc_opt=paths=source_relative \
 		sa_proto/services/user.proto sa_proto/services/shared.proto
 
-.PHONY: migrateup migrateup1 migratedown migratedown1 compose composebuild sqlc proto
+.PHONY: migrate-up migrate-up-1 migrate-down migrate-down-1 compose compose-build compose-build-detached create-envs sqlc proto
