@@ -1,11 +1,13 @@
-include app.env
-export $(shell sed 's/=.*//' app.env)
+ifneq ("$(wildcard app.env)", "")
+	include app.env
+	export $(shell sed 's/=.*//' app.env)
+endif
 
 DOCKER_COMPOSE_FILE = ./.dockers/docker-compose.yml
 DOCKER_NETWORK = dockers_sa_user_network
 
-URI_DB := postgresql://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
-MIGRATE := docker run -v $(shell pwd)/pkg/sqlc/migration:/migrations --network $(DOCKER_NETWORK) migrate/migrate -path /migrations -database "$(URI_DB)" -verbose
+URI_DB = postgresql://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
+MIGRATE = docker run -v $(shell pwd)/pkg/sqlc/migration:/migrations --network $(DOCKER_NETWORK) migrate/migrate -path /migrations -database "$(URI_DB)" -verbose
 
 setup:
 	$(MAKE) create-envs
