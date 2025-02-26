@@ -14,7 +14,7 @@ This submodule manages the users.
 ### Prerequisites
 - [Docker](https://docs.docker.com/install/)
 - [Docker compose](https://docs.docker.com/compose/install/)
-- [Make](https://www.gnu.org/software/make/?utm_source=chatgpt.com#download)
+- [Make](https://www.gnu.org/software/make/#download)
 - [Protoc](https://grpc.io/docs/protoc-installation/)
 
 *Note: Keep in mind that the entire project was tested on WSL.*
