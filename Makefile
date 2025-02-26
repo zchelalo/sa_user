@@ -1,14 +1,17 @@
-HOST=localhost
-PORT=5433
-URI_DB=postgresql://postgres:example@$(HOST):$(PORT)/sa_user?sslmode=disable
-MIGRATE=migrate -path pkg/sqlc/migration -database "$(URI_DB)" -verbose
+include app.env
+export $(shell sed 's/=.*//' app.env)
+
 DOCKER_COMPOSE_FILE = ./.dockers/docker-compose.yml
+DOCKER_NETWORK = dockers_sa_user_network
+
+URI_DB := postgresql://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
+MIGRATE := docker run -v $(shell pwd)/pkg/sqlc/migration:/migrations --network $(DOCKER_NETWORK) migrate/migrate -path /migrations -database "$(URI_DB)" -verbose
 
 setup:
 	$(MAKE) create-envs
 	$(MAKE) compose-build-detached
-	chmod +x scripts/wait_for_db.sh
-	./scripts/wait_for_db.sh $(HOST) $(PORT)
+	docker run --rm --network=$(DOCKER_NETWORK) \
+		-v $(shell pwd)/scripts:/scripts alpine sh /scripts/wait_for_db.sh $(DB_HOST) $(DB_PORT)
 	$(MAKE) migrate-up
 
 migrate-up:
