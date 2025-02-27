@@ -14,13 +14,13 @@ type SingletonDB struct {
 
 var (
 	instance *SingletonDB
-	once     sync.Once
+	onceConn sync.Once
 	initErr  error
 )
 
 func initInstance(driver, source string) {
-	once.Do(func() {
-		conn, err := connection.NewConnection(driver, source)
+	onceConn.Do(func() {
+		conn, err := connection.New(driver, source)
 		if err != nil {
 			initErr = err
 			return

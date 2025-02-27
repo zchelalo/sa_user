@@ -13,14 +13,13 @@ import (
 	"github.com/zchelalo/sa_user/pkg/bootstrap"
 	"github.com/zchelalo/sa_user/pkg/proto"
 	"github.com/zchelalo/sa_user/pkg/sqlc/db"
-	"github.com/zchelalo/sa_user/pkg/util"
 	"google.golang.org/grpc"
 )
 
 func main() {
 	logger := bootstrap.GetLogger()
 
-	config, err := util.LoadConfig(".")
+	config, err := bootstrap.LoadConfig(".")
 	if err != nil {
 		logger.Fatal("cannot load config:", err)
 	}

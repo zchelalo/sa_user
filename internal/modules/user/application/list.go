@@ -4,8 +4,8 @@ import (
 	"context"
 
 	userDomain "github.com/zchelalo/sa_user/internal/modules/user/domain"
+	"github.com/zchelalo/sa_user/pkg/bootstrap"
 	"github.com/zchelalo/sa_user/pkg/meta"
-	"github.com/zchelalo/sa_user/pkg/util"
 )
 
 func (useCase *UserUseCases) GetAll(ctx context.Context, page, limit int32) ([]*userDomain.UserEntity, *meta.Meta, error) {
@@ -14,7 +14,7 @@ func (useCase *UserUseCases) GetAll(ctx context.Context, page, limit int32) ([]*
 		return nil, nil, err
 	}
 
-	config := util.GetConfig()
+	config := bootstrap.GetConfig()
 
 	meta, err := meta.New(page, limit, int32(usersCount), config.PaginatorLimitDefault)
 	if err != nil {

@@ -1,4 +1,4 @@
-package util
+package bootstrap
 
 import (
 	"sync"
@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	config Config
-	once   sync.Once
+	config     Config
+	onceConfig sync.Once
 )
 
 type Config struct {
@@ -23,7 +23,7 @@ type Config struct {
 
 func LoadConfig(path string) (Config, error) {
 	var err error
-	once.Do(func() {
+	onceConfig.Do(func() {
 		viper.AddConfigPath(path)
 		viper.SetConfigName("app")
 		viper.SetConfigType("env")
