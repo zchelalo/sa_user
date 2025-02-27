@@ -11,15 +11,9 @@ var (
 	loggerOnce sync.Once
 )
 
-func InitLogger() {
+func GetLogger() *log.Logger {
 	loggerOnce.Do(func() {
 		logger = log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
 	})
-}
-
-func GetLogger() *log.Logger {
-	if logger == nil {
-		InitLogger()
-	}
 	return logger
 }

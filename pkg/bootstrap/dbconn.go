@@ -12,27 +12,38 @@ type SingletonDB struct {
 	conn *sql.DB
 }
 
-var instance *SingletonDB
-var once sync.Once
+var (
+	instance *SingletonDB
+	once     sync.Once
+	initErr  error
+)
 
-func InitInstance(driver, source string) error {
-	var err error
+func initInstance(driver, source string) {
 	once.Do(func() {
-		conn, initErr := connection.NewConnection(driver, source)
-		if initErr != nil {
-			err = initErr
+		conn, err := connection.NewConnection(driver, source)
+		if err != nil {
+			initErr = err
 			return
 		}
 		instance = &SingletonDB{
 			conn: conn,
 		}
 	})
-	return err
 }
 
-func GetInstance() (*sql.DB, error) {
-	if instance == nil {
-		return nil, fmt.Errorf("instance not initialized")
+func GetInstance(driver, source string) (*sql.DB, error) {
+	if instance == nil && initErr == nil {
+		initInstance(driver, source)
+	}
+	if initErr != nil {
+		return nil, initErr
 	}
 	return instance.conn, nil
+}
+
+func Close() error {
+	if instance == nil || instance.conn == nil {
+		return fmt.Errorf("no active database connection")
+	}
+	return instance.conn.Close()
 }

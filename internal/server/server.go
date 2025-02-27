@@ -1,48 +1,45 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net"
 
-	_ "github.com/lib/pq"
-	userInfrastructure "github.com/zchelalo/sa_user/internal/modules/user/infrastructure"
 	"github.com/zchelalo/sa_user/pkg/bootstrap"
-	"github.com/zchelalo/sa_user/pkg/proto"
-	userDb "github.com/zchelalo/sa_user/pkg/sqlc/user/db"
-	"github.com/zchelalo/sa_user/pkg/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
-func Start() {
-	logger := bootstrap.GetLogger()
+type Server struct {
+	grpcServer *grpc.Server
+	port       int32
+}
 
-	conn, err := bootstrap.GetInstance()
-	if err != nil {
-		logger.Fatal("cannot connect to db:", err)
+func New(port int32, serviceRegistrations ...func(*grpc.Server)) *Server {
+	server := grpc.NewServer()
+
+	for _, register := range serviceRegistrations {
+		register(server)
 	}
 
-	ctx := context.Background()
+	reflection.Register(server)
 
-	userStore := userDb.NewStore(conn)
-	userRouter := userInfrastructure.NewUserRouter(userStore, ctx)
+	return &Server{
+		grpcServer: server,
+		port:       port,
+	}
+}
 
-	config := util.GetConfig()
+func (s *Server) Start() {
+	logger := bootstrap.GetLogger()
 
-	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Port))
+	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", s.port))
 	if err != nil {
 		logger.Fatal("cannot listen:", err)
 	}
 
-	server := grpc.NewServer()
-	proto.RegisterUserServiceServer(server, userRouter)
-
-	reflection.Register(server)
-
-	if err := server.Serve(listen); err != nil {
+	if err := s.grpcServer.Serve(listen); err != nil {
 		logger.Fatalf("Error serving: %s", err.Error())
 	}
 
-	logger.Println("Server running on port:", config.Port)
+	logger.Println("Server running on port:", s.port)
 }
